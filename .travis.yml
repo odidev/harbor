@@ -1,0 +1,41 @@
+dist: xenial
+arch:
+  - arm64
+
+install:
+  - uname -m
+  - sudo apt update
+  - sudo apt install postgresql postgresql-contrib
+  - sudo service postgresql start
+  - sudo apt update && sudo apt install golang
+  - go version
+  - wget https://go.dev/dl/go1.18.2.src.tar.gz
+  - tar -xzf go1.18.2.src.tar.gz -C /usr/local/
+  - source /etc/profile
+  - go version
+  
+  - set -x
+  - cd src/github.com/goharbor/harbor
+  - pwd
+  - env
+  - sudo curl -L --fail https://raw.githubusercontent.com/linuxserver/docker-docker-compose/master/run.sh -o /usr/local/bin/docker-compose
+  - sudo chmod 777 /usr/local/bin/docker-compose
+  - docker-compose
+
+  - IP=`hostname -I | awk '{print $1}'`
+  - echo '{"insecure-registries" : ["'$IP':5000"]}' | sudo tee /etc/docker/daemon.json
+  - echo "IP=$IP" >> $GITHUB_ENV
+  - sudo cp ./tests/harbor_ca.crt /usr/local/share/ca-certificates/
+  - sudo update-ca-certificates
+  - sudo service docker restart
+  - env
+  - df -h
+  - bash ./tests/showtime.sh ./tests/ci/ut_install.sh
+
+
+script:
+  - echo IP: $IP
+  - df -h
+  - cd src/github.com/goharbor/harbor
+  - bash ./tests/showtime.sh ./tests/ci/ut_run.sh $IP
+  - df -h
